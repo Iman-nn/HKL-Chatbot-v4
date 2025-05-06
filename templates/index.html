@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Kuala Lumpur Chatbot</title>
+  <link rel="shortcut icon" type="image/x-icon" href="static/hkl-favicon.ico" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg-gray-50 h-screen flex flex-col">
+  <!-- Header -->
+  <header class="flex items-center justify-between p-4 bg-blue-700 text-white shadow-md">
+    <div class="flex items-center space-x-3">
+      <img src="static/Logo_Hospital_Kuala_Lumpur.png" alt="Hospital Logo" class="rounded-full" style="width: 50px; height: 50px;">
+      <h1 class="text-xl font-bold">Hospital Kuala Lumpur Chatbot</h1>
+    </div>
+    <button id="toggle-dark" class="bg-white text-blue-600 px-5 py-3 rounded-full text-sm"> ☾ </button>
+  </header>
+
+  <!-- Chat Section -->
+  <main class="flex-1 overflow-y-auto p-4" id="chatbox">
+    <!-- Messages will appear here -->
+  </main>
+
+  <!-- Typing Animation -->
+  <div id="typing" class="text-center hidden">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Footer Input -->
+  <footer class="p-4 bg-gray-100 flex items-center space-x-2">
+    <button id="voice-btn" class="bg-blue-600 text-white px-4 py-2 rounded-full">
+      <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    </button>
+    <textarea id="user-input" placeholder="Ask here..." rows="1"
+      class="flex-1 border rounded-full px-4 py-2 focus:outline-none resize-none overflow-hidden"></textarea>
+    <button id="send-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full">Send</button>
+  </footer>
+
+  <!-- Popup Message -->
+  <div id="popup-message" class="popup">Fill in the blank</div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    let currentConversationId = null;
+    let recognizing = false;
+    let recognition;
+
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = function (event) {
+        $('#user-input').val(event.results[0][0].transcript);
+      };
+
+      recognition.onerror = function (event) {
+        console.error(event.error);
+      };
+    }
+
+    $(document).ready(function () {
+      startNewConversation();
+
+      $('#send-btn').click(function () {
+        sendMessage();
+      });
+
+      $('#user-input')
+        .on('keypress', function (e) {
+          if (e.which === 13 && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        })
+        .on('input', function () {
+          this.style.height = 'auto';
+          this.style.height = (this.scrollHeight) + 'px';
+        });
+
+      $('#voice-btn').click(function () {
+        if (!recognizing) {
+          recognition.start();
+          recognizing = true;
+        } else {
+          recognition.stop();
+          recognizing = false;
+        }
+      });
+
+      $('#toggle-dark').click(function () {
+        $('body').toggleClass('bg-gray-900 text-black');
+        $('header').toggleClass('bg-gray-800');
+        $('footer').toggleClass('bg-gray-800');
+      });
+    });
+
+    function startNewConversation() {
+      $.post('/start_conversation', function (data) {
+        currentConversationId = data.conversation_id;
+      });
+    }
+
+    function sendMessage() {
+      let userInput = $('#user-input').val();
+      if (!userInput.trim()) {
+        // Show the popup message
+        $('#popup-message').fadeIn(500, function() {
+          // Hide the popup after 1.5 seconds
+          setTimeout(function() {
+            $('#popup-message').fadeOut(500);
+          }, 1500);
+        });
+        return; // Stop sending the message
+      }
+
+      appendUserMessage(userInput);
+      $('#user-input').val('');
+      $('#typing').removeClass('hidden');
+
+      $.ajax({
+        type: 'POST',
+        url: '/ask/' + currentConversationId,
+        data: JSON.stringify({ message: userInput }),
+        contentType: 'application/json',
+        success: function (response) {
+          $('#typing').addClass('hidden');
+          // Handle navigation suggestions
+          if (Array.isArray(response.response)) {
+            appendBotMessage(response.response.join('<br>'));
+          } else {
+            appendBotMessage(response.response);
+          }
+          if (response.suggestions) {
+            showSuggestions(response.suggestions);
+          }
+        },
+        error: function () {
+          $('#typing').addClass('hidden');
+          appendBotMessage('Error processing your message.');
+        }
+      });
+    }
+
+    function appendUserMessage(msg) {
+      $('#chatbox').append(`<div class="flex justify-end mb-2">
+        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">${msg}</div>
+      </div>`);
+      scrollChatToBottom();
+    }
+
+    function appendBotMessage(msg) {
+      $('#chatbox').append(`<div class="flex justify-start mb-2">
+        <div class="bg-gray-300 text-gray-800 p-3 rounded-lg max-w-lg">${msg}</div>
+      </div>`);
+      scrollChatToBottom();
+    }
+
+    function showSuggestions(suggestions) {
+      let suggestionHtml = suggestions.map(s => `
+        <div class="flex justify-start mb-2">
+          <button class="bg-gray-200 text-blue-600 px-3 py-1 rounded-full text-sm" onclick="suggestQuestion('${s.replace(/'/g, "\\'")}')">
+            ${s}
+          </button>
+        </div>
+      `).join('');
+
+      $('#chatbox').append(`<div class="flex justify-start mb-2">${suggestionHtml}</div>`);
+      scrollChatToBottom();
+    }
+
+    function suggestQuestion(question) {
+      $('#user-input').val(question).focus();
+    }
+
+    function scrollChatToBottom() {
+      $('#chatbox').scrollTop($('#chatbox')[0].scrollHeight);
+    }
+  </script>
+</body>
+
+</html>
