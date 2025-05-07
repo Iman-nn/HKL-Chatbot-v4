@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hospital Kuala Lumpur Chatbot</title>
+  <link rel="shortcut icon" type="image/x-icon" href="static/hkl-favicon.ico" />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f9fafb;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+
+    #chatbox {
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* Popup message */
+    .popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 20px;
+      border-radius: 5px;
+      z-index: 1000;
+      display: none; /* Hidden by default */
+    }
+
+    /* Message styles */
+    .message {
+      margin-bottom: 10px;
+      border-radius: 20px;
+      padding: 12px 18px;
+      max-width: 90%;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .message.bot,
+    .message.user {
+      max-width: 90%;
+    }
+
+    /* Input styles */
+    #user-input {
+      border: 1px solid #cbd5e1;
+      border-radius: 9999px;
+      padding: 10px 20px;
+      flex-grow: 1;
+      margin-right: 10px;
+      transition: border-color 0.3s ease;
+    }
+
+    #user-input:focus {
+      border-color: #2563eb;
+      outline: none;
+    }
+
+    /* Button styles */
+    button {
+      border-radius: 9999px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.03);
+    }
+
+    /* Footer adjustments */
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Loading spinner */
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #chatbox {
+        padding: 10px;
+      }
+
+      .message {
+        padding: 10px 15px;
+      }
+
+      #user-input {
+        padding: 8px 15px;
+      }
+
+      button {
+        padding: 8px;
+      }
+
+      footer {
+        flex-direction: row;
+        align-items: center;
+      }
+
+      #user-input {
+        margin-right: 10px;
+        width: 100%;
+      }
+
+      #send-btn,
+      #voice-btn {
+        width: auto;
+        margin-left: 5px;
+      }
+    }
+
+    /* Dark mode - functionality implemented in JS */
+    body.dark-mode {
+      background-color: #1f2937;
+      color: #f9fafb;
+    }
+
+    body.dark-mode header,
+    body.dark-mode footer {
+      background-color: #374151;
+    }
+
+    body.dark-mode #chatbox {
+      background-color: #1f2937;
+    }
+
+    body.dark-mode .message.bot {
+      background-color: #374151;
+      color: #d1d5db;
+    }
+
+    body.dark-mode .message.user {
+      background-color: #3b82f6;
+      color: #ffffff;
+    }
+
+    .bg-yellow-200 {
+      background-color: #ca58ff;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 h-screen flex flex-col">
+  <!-- Header -->
+  <header class="flex items-center justify-between p-4 bg-blue-700 text-white shadow-md">
+    <div class="flex items-center space-x-3">
+      <img src="static/Logo_Hospital_Kuala_Lumpur.png" alt="Hospital Logo" class="rounded-full" style="width: 50px; height: 50px;">
+      <h1 class="text-xl font-bold">Hospital Kuala Lumpur Chatbot</h1>
+    </div>
+    <button id="toggle-dark" class="bg-white text-blue-600 px-5 py-3 rounded-full text-sm">☾</button>
+  </header>
+
+  <!-- Chat Section -->
+  <main class="flex-1 overflow-y-auto p-4" id="chatbox">
+    <!-- Messages will appear here -->
+  </main>
+
+  <!-- Typing Animation -->
+  <div id="typing" class="text-center hidden">
+    <div class="loader"></div>
+  </div>
+
+  <!-- Footer Input -->
+  <footer class="p-4 bg-gray-100 flex items-center space-x-2">
+    <button id="voice-btn" class="bg-blue-600 text-white px-4 py-2 rounded-full">
+      <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+      </svg>
+    </button>
+    <textarea id="user-input" placeholder="Ask here..." rows="1" class="flex-1 border rounded-full px-4 py-2 focus:outline-none resize-none overflow-hidden"></textarea>
+    <button id="send-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full">Send</button>
+  </footer>
+
+  <!-- Popup Message -->
+  <div id="popup-message" class="popup">Please enter a message</div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    // Global variables
+    let currentConversationId = null;
+    let recognizing = false;
+    let recognition;
+
+    // Initialize speech recognition if supported
+    if ('webkitSpeechRecognition' in window) {
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = function (event) {
+        $('#user-input').val(event.results[0][0].transcript);
+      };
+
+      recognition.onerror = function (event) {
+        console.error("Speech recognition error:", event.error);
+      };
+    }
+
+    $(document).ready(function () {
+      // Initialize a new conversation when page loads
+      startNewConversation();
+
+      // Welcome message
+      setTimeout(function() {
+        appendBotMessage("Hello! I'm the Hospital Kuala Lumpur (HKL) chatbot. How can I help you today?");
+      }, 500);
+
+      // Event listeners
+      $('#send-btn').click(function () {
+        sendMessage();
+      });
+
+      $('#user-input')
+        .on('keypress', function (e) {
+          // Send message when Enter is pressed (without Shift)
+          if (e.which === 13 && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        })
+        .on('input', function () {
+          // Auto-resize textarea
+          this.style.height = 'auto';
+          this.style.height = (this.scrollHeight) + 'px';
+        });
+
+      // Voice button handler
+      $('#voice-btn').click(function () {
+        if (!recognition) {
+          appendBotMessage("Sorry, speech recognition is not supported in your browser.");
+          return;
+        }
+        
+        if (!recognizing) {
+          recognition.start();
+          recognizing = true;
+          $(this).addClass('bg-red-600').removeClass('bg-blue-600');
+        } else {
+          recognition.stop();
+          recognizing = false;
+          $(this).addClass('bg-blue-600').removeClass('bg-red-600');
+        }
+      });
+
+      // Dark mode toggle
+      $('#toggle-dark').click(function () {
+        $('body').toggleClass('dark-mode');
+        
+        // Update toggle button appearance
+        if ($('body').hasClass('dark-mode')) {
+          $(this).html('☀').removeClass('text-blue-600 bg-white').addClass('text-yellow-300 bg-gray-700');
+        } else {
+          $(this).html('☾').removeClass('text-yellow-300 bg-gray-700').addClass('text-blue-600 bg-white');
+        }
+      });
+    });
+
+    // Function to start a new conversation
+    function startNewConversation() {
+      $.post('/start_conversation', function (data) {
+        currentConversationId = data.conversation_id;
+      });
+    }
+
+    // Function to send user message
+    function sendMessage() {
+      let userInput = $('#user-input').val().trim();
+      
+      // Check for empty message
+      if (!userInput) {
+        $('#popup-message').fadeIn(500, function() {
+          setTimeout(function() {
+            $('#popup-message').fadeOut(500);
+          }, 1500);
+        });
+        return;
+      }
+
+      // Add user message to chat
+      appendUserMessage(userInput);
+      
+      // Clear input and reset height
+      $('#user-input').val('');
+      $('#user-input').css('height', 'auto');
+      
+      // Show typing indicator
+      $('#typing').removeClass('hidden');
+
+      // Send request to server
+      $.ajax({
+        type: 'POST',
+        url: '/ask/' + currentConversationId,
+        data: JSON.stringify({ message: userInput }),
+        contentType: 'application/json',
+        success: function (response) {
+          // Hide typing indicator
+          $('#typing').addClass('hidden');
+          
+          // Handle different response types
+          if (Array.isArray(response.response)) {
+            appendBotMessage(response.response.join('<br>'));
+          } else {
+            appendBotMessage(response.response);
+          }
+          
+          // Show suggestions if available
+          if (response.suggestions) {
+            showSuggestions(response.suggestions);
+          }
+        },
+        error: function (xhr, status, error) {
+          $('#typing').addClass('hidden');
+          console.error("Error:", error);
+          appendBotMessage('Sorry, I encountered an error processing your message.');
+        }
+      });
+    }
+
+    // Function to add user message to chat
+    function appendUserMessage(msg) {
+      $('#chatbox').append(`<div class="flex justify-end mb-2">
+        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">${msg}</div>
+      </div>`);
+      scrollChatToBottom();
+    }
+
+    // Function to add bot message to chat
+    function appendBotMessage(msg) {
+      $('#chatbox').append(`<div class="flex justify-start mb-2">
+        <div class="bg-gray-300 text-gray-800 p-3 rounded-lg max-w-lg">${msg}</div>
+      </div>`);
+      scrollChatToBottom();
+    }
+
+    // Function to display suggestions
+    function showSuggestions(suggestions) {
+      suggestions.forEach(s => {
+        $('#chatbox').append(`
+          <div class="flex justify-start mb-2">
+            <button class="bg-gray-200 text-blue-600 px-3 py-1 rounded-full text-sm" onclick="suggestQuestion('${s.replace(/'/g, "\\'")}')">
+              ${s}
+            </button>
+          </div>
+        `);
+      });
+      scrollChatToBottom();
+    }
+
+    // Function to fill input with suggested question
+    function suggestQuestion(question) {
+      $('#user-input').val(question).focus();
+    }
+
+    // Function to scroll chat to bottom
+    function scrollChatToBottom() {
+      $('#chatbox').scrollTop($('#chatbox')[0].scrollHeight);
+    }
+  </script>
+</body>
+
+</html>
