@@ -138,7 +138,7 @@
     /* Dark mode - functionality implemented in JS */
     body.dark-mode {
       background-color: #1f2937;
-      color: #f9fafb;
+      color: #181818; /* Text Input Color */
     }
 
     body.dark-mode header,
@@ -189,7 +189,7 @@
   </div>
 
   <!-- Footer Input -->
-  <footer class="p-4 bg-gray-100 flex items-center space-x-2">
+  <footer class="p-4 bg-gray-300 flex items-center space-x-2">
     <button id="voice-btn" class="bg-blue-600 text-white px-4 py-2 rounded-full">
       <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
@@ -280,9 +280,9 @@
         
         // Update toggle button appearance
         if ($('body').hasClass('dark-mode')) {
-          $(this).html('☀').removeClass('text-blue-600 bg-white').addClass('text-yellow-300 bg-gray-700');
+          $(this).html('☀').removeClass('text-blue-600 bg-white').addClass('text-yellow-300 bg-gray-500');
         } else {
-          $(this).html('☾').removeClass('text-yellow-300 bg-gray-700').addClass('text-blue-600 bg-white');
+          $(this).html('☾').removeClass('text-yellow-300 bg-gray-500').addClass('text-blue-600 bg-white');
         }
       });
     });

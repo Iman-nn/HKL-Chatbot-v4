@@ -82,7 +82,7 @@ def call_openrouter_api(user_message):
     }
     
     payload = {
-        "model": "qwen/qwen3-1.7b:free",
+        "model": "qwen/qwen3-30b-a3b:free",
         "messages": [
             {
                 "role": "system",
