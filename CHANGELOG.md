@@ -69,3 +69,11 @@ Isu yang disahkan:
 - README.md: arahan UI dan status pengesahan dikemas kini.
 - 33 ujian backend, 3 ujian HTML dan 13 ujian JavaScript lulus. Ujian HTTP Waitress kini lulus; kegagalan semakan kelulusan yang direkodkan dalam versi 17 Oktober tidak lagi menghalang ujian ini.
 - Semakan visual melalui Chromium terasing kini lulus untuk desktop, tema gelap dan emulasi telefon (390 px / 320 px), termasuk dialog FAQ/lokasi, sembang, reset dan pemeriksaan overflow mendatar. Screenshot disertakan dalam artifacts. Tiada perubahan dependency runtime atau kontrak API backend.
+
+## Vercel deployment - 19 Oktober 2026
+
+- `vercel.json`: menambah konfigurasi Flask Function 30 saat dan mengecualikan ujian, artifak, virtualenv, SQLite tempatan serta model `.joblib` lama daripada bundle.
+- `.python-version`: menetapkan Python 3.12 untuk wheel `numpy`, `scipy` dan `scikit-learn` yang konsisten.
+- `public/static/`: menyalin aset UI supaya Vercel boleh melayan fail statik melalui CDN.
+- `hkl_chatbot/__init__.py`: menggunakan `/tmp` hanya sebagai fallback apabila `VERCEL=1`, dan mengenali hostname Vercel automatik; domain tersuai masih perlu `HKL_TRUSTED_HOSTS`.
+- README.md: menambah arahan CLI, environment variables, OpenRouter dan had SQLite stateless.

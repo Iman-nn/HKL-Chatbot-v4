@@ -19,6 +19,31 @@ requirements.txt menyenaraikan dependency utama; requirements.lock mengunci semu
 
 Buka http://127.0.0.1:5000/. Fail HTML sahaja dan Netlify static hosting tidak menjalankan backend Python. Konfigurasi Netlify/SPA lama serta package.json kosong dibuang. Perintah python app.py hanya untuk pembangunan tempatan dan debugger dimatikan.
 
+## Deploy ke Vercel
+
+Repo ini mempunyai `app.py` sebagai Flask entry point, `vercel.json` untuk had fungsi dan `.python-version` untuk Python 3.12. Import repo Git ke Vercel atau gunakan CLI:
+
+```powershell
+npm install -g vercel
+vercel login
+vercel
+vercel --prod
+```
+
+Tetapkan pemboleh ubah berikut dalam Vercel Project Settings > Environment Variables untuk Preview dan Production:
+
+```text
+OPENROUTER_ENABLED=true
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=openrouter/free
+HKL_TRUSTED_HOSTS=nama-projek.vercel.app,www.domain-anda.com
+HKL_HSTS_ENABLED=true
+```
+
+Jika `OPENROUTER_ENABLED=false`, chatbot masih menjawab soalan yang wujud dalam korpus FAQ/lokasi tanpa panggilan luar. Aset UI disalin ke `public/static` supaya boleh dihantar oleh CDN Vercel.
+
+SQLite tidak sesuai sebagai storan sesi production di Vercel kerana function bersifat stateless. Apabila `VERCEL=1` dan `HKL_DATABASE` tidak ditetapkan, aplikasi menggunakan `/tmp/hkl-chatbot.sqlite3` untuk demo sahaja; data boleh hilang apabila instance ditukar dan tidak dikongsi antara instance. Untuk production, ganti `Store` dengan adapter PostgreSQL/Redis yang dikongsi dan tetapkan URL rahsia melalui Vercel, kemudian jalankan smoke test pada deployment.
+
 ## Struktur
 
 - app.py: titik masuk WSGI.

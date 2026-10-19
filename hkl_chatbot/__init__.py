@@ -21,18 +21,34 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def create_app(config=None) -> Flask:
     app = Flask(__name__, template_folder=str(ROOT / "templates"), static_folder=str(ROOT / "static"))
+    # Vercel's function filesystem is read-only except for /tmp.  Use that
+    # location for a short-lived demo session when no durable store is set;
+    # production deployments should override HKL_DATABASE with a shared DB
+    # adapter/service rather than relying on instance-local SQLite.
+    default_database = os.getenv("HKL_DATABASE") or (
+        "/tmp/hkl-chatbot.sqlite3" if os.getenv("VERCEL") == "1"
+        else str(ROOT / "instance" / "chatbot.sqlite3")
+    )
+    default_hosts = ["localhost", "127.0.0.1", "[::1]"]
+    # Vercel exposes these hostnames to the function.  Custom domains still
+    # belong in HKL_TRUSTED_HOSTS explicitly so an unexpected Host is rejected.
+    for variable in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+        host = os.getenv(variable, "").strip()
+        if host and host not in default_hosts:
+            default_hosts.append(host)
+    configured_hosts = os.getenv("HKL_TRUSTED_HOSTS")
     app.config.from_mapping(
         MAX_CONTENT_LENGTH=16 * 1024,
         FAQ_PATH=str(ROOT / "hklFAQsv2.csv"),
         NAVIGATION_PATH=str(ROOT / "hklNavigation.csv"),
-        DATABASE=os.getenv("HKL_DATABASE", str(ROOT / "instance" / "chatbot.sqlite3")),
+        DATABASE=default_database,
         CONVERSATION_TTL_SECONDS=3600, MAX_CONVERSATIONS=1000, MAX_HISTORY=50,
         MAX_MESSAGE_LENGTH=2000, SIMILARITY_THRESHOLD=0.3,
         RATE_LIMIT_PER_MINUTE=60, START_LIMIT_PER_MINUTE=10,
         OPENROUTER_ENABLED=os.getenv("OPENROUTER_ENABLED", "false").lower() == "true",
         OPENROUTER_API_KEY=os.getenv("OPENROUTER_API_KEY", ""),
         OPENROUTER_MODEL=os.getenv("OPENROUTER_MODEL", ""),
-        TRUSTED_HOSTS=[host.strip() for host in os.getenv("HKL_TRUSTED_HOSTS", "localhost,127.0.0.1,[::1]").split(",") if host.strip()],
+        TRUSTED_HOSTS=[host.strip() for host in (configured_hosts or ",".join(default_hosts)).split(",") if host.strip()],
         # Enable only after HTTPS is enforced at the reverse proxy.
         HSTS_ENABLED=os.getenv("HKL_HSTS_ENABLED", "false").lower() == "true",
     )
