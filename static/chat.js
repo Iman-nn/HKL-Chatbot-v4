@@ -60,15 +60,137 @@ function scrollConversation() {
   conversationArea.scrollTop = conversationArea.scrollHeight;
 }
 
-function appendMessage(text, author = "bot") {
+function safeLink(value) {
+  // Reject script/data URLs, credentials and control characters before creating
+  // any anchor. HTML from the corpus or provider is never parsed as markup.
+  if (typeof value !== "string" || /[\\\s\u0000-\u001f\u007f]/.test(value)) return null;
+  if (/^tel:\+?[0-9]{9,15}(?:;ext=[0-9]{1,6})?$/.test(value)) return value;
+  if (/^mailto:[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value)) return value;
+  try {
+    if (!/^(https?:\/\/|www\.)/i.test(value)) return null;
+    const url = new URL(/^www\./i.test(value) ? "https://" + value : value);
+    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function appendLink(parent, label, destination) {
+  const href = safeLink(destination);
+  if (!href) {
+    parent.append(document.createTextNode(label));
+    return;
+  }
+  const anchor = document.createElement("a");
+  anchor.textContent = label;
+  anchor.setAttribute("href", href);
+  if (/^https?:/.test(href)) {
+    anchor.setAttribute("target", "_blank");
+    anchor.setAttribute("rel", "noopener noreferrer");
+    anchor.setAttribute("referrerpolicy", "no-referrer");
+  }
+  parent.append(anchor);
+}
+
+function appendInline(parent, text, allowBold = true) {
+  // A deliberately small Markdown subset built with DOM nodes: bold, code and
+  // links. Unsupported syntax and raw HTML remain harmless literal text.
+  const tokens = /\*\*([^*\n]+)\*\*|`([^`\n]+)`|\[([^\]\n]+)\]\(([^)\n]+)\)|(?:https?:\/\/|www\.)[^\s<>\x22]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(?:\+60[ -]?|0)[1-9](?:[ -]?\d){7,9}(?:\s+(?:ext\.?|extension)\s*:?\s*\d{1,6})?/gi;
+  let offset = 0;
+  for (const match of text.matchAll(tokens)) {
+    parent.append(document.createTextNode(text.slice(offset, match.index)));
+    const [token, bold, code, label, destination] = match;
+    if (bold && allowBold) {
+      const strong = document.createElement("strong");
+      appendInline(strong, bold, false);
+      parent.append(strong);
+    } else if (code) {
+      const element = document.createElement("code");
+      element.textContent = code;
+      parent.append(element);
+    } else if (label) {
+      appendLink(parent, label, destination);
+    } else if (/^(https?:\/\/|www\.)/i.test(token)) {
+      const clean = token.replace(/[.,;:!?)\]]+$/, "");
+      appendLink(parent, clean, clean);
+      parent.append(document.createTextNode(token.slice(clean.length)));
+    } else if (token.includes("@")) {
+      appendLink(parent, token, "mailto:" + token);
+    } else if (/^(\+60|0)/.test(token)) {
+      const parts = token.split(/\s+(?:ext\.?|extension)\s*:?\s*/i);
+      appendLink(parent, token, "tel:" + parts[0].replace(/[ -]/g, "") + (parts[1] ? ";ext=" + parts[1] : ""));
+    } else {
+      parent.append(document.createTextNode(token));
+    }
+    offset = match.index + token.length;
+  }
+  parent.append(document.createTextNode(text.slice(offset)));
+}
+
+function renderAnswer(parent, text) {
+  let paragraph = null;
+  let list = null;
+  for (const raw of text.replace(/\r\n?/g, "\n").trim().split("\n")) {
+    const line = raw.trim();
+    if (!line) { paragraph = null; list = null; continue; }
+    const item = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+    if (item) {
+      const kind = /^\d/.test(line) ? "ol" : "ul";
+      if (!list || list.tagName.toLowerCase() !== kind) {
+        list = document.createElement(kind);
+        parent.append(list);
+      }
+      const entry = document.createElement("li");
+      appendInline(entry, item[1]);
+      list.append(entry);
+      paragraph = null;
+    } else {
+      list = null;
+      if (!paragraph) {
+        paragraph = document.createElement("p");
+        parent.append(paragraph);
+      } else {
+        paragraph.append(document.createElement("br"));
+      }
+      appendInline(paragraph, line.replace(/^#{1,6}\s+/, ""));
+    }
+  }
+}
+
+function appendMessage(text, author = "bot", metadata = {}) {
   welcome.hidden = true;
   chatbox.hidden = false;
   const message = document.createElement("div");
   message.className = "message " + author;
   message.setAttribute("role", "article");
   message.setAttribute("aria-label", author === "user" ? "You" : "HKL Guide");
-  // User, CSV and provider content stays literal text, including in explorer results.
-  message.textContent = text;
+  if (author === "user") message.textContent = text;
+  else {
+    if (metadata.source === "external_ai") {
+      const badge = document.createElement("span");
+      badge.className = "answer-badge";
+      badge.textContent = "AI-generated · Please verify";
+      message.append(badge);
+    }
+    const content = document.createElement("div");
+    content.className = "answer-content";
+    renderAnswer(content, String(text));
+    message.append(content);
+    // Only curated server references get a source footer. AI-produced links
+    // in the answer are never promoted to verified citations.
+    for (const reference of (metadata.source === "official_contact" ? metadata.references || [] : []).slice(0, 2)) {
+      const href = safeLink(reference.url);
+      if (!href || new URL(href).hostname !== "hkl.moh.gov.my" || !href.startsWith("https://")) continue;
+      const footer = document.createElement("div");
+      footer.className = "answer-source";
+      footer.append(document.createTextNode("Source: "));
+      appendLink(footer, reference.title || "HKL official website", href);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(reference.checked_on || "")) {
+        footer.append(document.createTextNode(" · Checked " + reference.checked_on));
+      }
+      message.append(footer);
+    }
+  }
   chatbox.append(message);
   while (chatbox.children.length > 150) chatbox.firstElementChild.remove();
   scrollConversation();
@@ -122,9 +244,7 @@ async function sendMessage(event) {
     const result = await api("/ask/" + encodeURIComponent(conversation.conversation_id), {
       method: "POST", body: { message }, authenticated: true,
     });
-    appendMessage(result.source === "external_ai"
-      ? "AI-generated answer. Please verify with hospital staff.\n" + result.response
-      : result.response);
+    appendMessage(result.response, "bot", result);
     showSuggestions(result.suggestions || []);
     status.textContent = "";
   } catch (error) {

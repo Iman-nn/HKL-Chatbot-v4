@@ -60,6 +60,24 @@ Matriks FAQ dibina sekali bagi setiap worker, bukan setiap permintaan. Tiada kep
 
 ## Kontrak API
 
+Jawapan bot kini menyokong subset Markdown yang selamat: label tebal, kod sebaris,
+perenggan dan senarai. Renderer membina DOM secara terus tanpa `innerHTML`; HTML
+mentah kekal sebagai teks. Pautan web, telefon Malaysia dan e-mel boleh ditekan;
+URL skrip/data dan URL dengan credentials disekat. Mesej pengguna kekal literal.
+Pautan yang muncul dalam jawapan AI bukan bukti bahawa kandungannya telah disahkan.
+
+Soalan hubungan umum HKL dalam BM/English menggunakan rekod kurasi dalam
+`hkl_chatbot/contact.py`, bersumberkan https://hkl.moh.gov.my/en/ dan disemak pada
+2026-10-19. Respons tersebut mempunyai `source=official_contact` dan `references`
+yang dipaparkan sebagai footer sumber. Jawapan CSV lain tidak diberi label
+"verified" secara automatik. Cadangan soalan ditapis berdasarkan ambang padanan,
+topik dan pengecualian soalan yang telah dijawab.
+
+Selepas mengubah `static/chat.js` atau `static/style.css`, selaraskan salinan
+`public/static` sebelum deployment Vercel. Ujian UI memeriksa kesamaan aset ini.
+Semakan browser pilihan: `python tests/response_browser_check.py` menggunakan
+preview tempatan tanpa AI pada port 5051, dengan Playwright/Chromium untuk QA.
+
 | Endpoint | Kontrak |
 | --- | --- |
 | POST /start_conversation | JSON kosong {}; pulangkan 201 dengan conversation_id, conversation_token, expires_in |

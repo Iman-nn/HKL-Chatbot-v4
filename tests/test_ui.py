@@ -65,6 +65,13 @@ class RenderedUiTests(unittest.TestCase):
                 self.assertTrue(attrs["href"].startswith("/static/"))
         self.assertNotIn("unsafe-inline", response.headers["Content-Security-Policy"])
 
+    def test_vercel_assets_match_the_tested_local_client(self):
+        # Vercel serves public/static directly; stale copies would hide fixes
+        # even when local Flask and JavaScript tests pass.
+        for filename in ("chat.js", "style.css"):
+            self.assertEqual((ROOT / "static" / filename).read_bytes(),
+                             (ROOT / "public" / "static" / filename).read_bytes())
+
     def test_external_ai_disclosure_follows_provider_setting(self):
         provider = self.app.extensions["provider"]
         self.assertNotIn("External AI assistance", self.client.get("/").get_data(as_text=True))

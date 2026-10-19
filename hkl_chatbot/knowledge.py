@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+from .contact import contact_answer
+
 
 def normalize(text: str) -> str:
     """Preserve Unicode words without runtime NLTK corpus downloads."""
@@ -73,6 +75,9 @@ class KnowledgeBase:
         result = self._faq_answer(message)
         if cleaned in self._exact_questions:
             return result
+        contact = contact_answer(cleaned)
+        if contact:
+            return contact
         navigation = self.navigation(cleaned)
         direction_query = cleaned.startswith(("where ", "di mana ", "dimanakah ", "lokasi ", "directions ", "how do i get to ", "how to get to "))
         if not navigation and direction_query:
@@ -84,7 +89,7 @@ class KnowledgeBase:
         if navigation:
             row = navigation[0]
             answer = "\n".join(f"{key}: {row[key]}" for key in ("Location", "Building", "Level", "Instructions"))
-            return {"response": answer, "suggestions": [row["Location"] for row in navigation[:4]], "source": "navigation"}
+            return {"response": answer, "suggestions": [item["Location"] for item in navigation[1:4]], "source": "navigation"}
 
         return result
 
@@ -93,7 +98,15 @@ class KnowledgeBase:
         scores = (self.matrix @ vector.T).toarray().ravel()
         # Stable ordering makes ties repeatable across requests and deployments.
         indices = np.argsort(-scores, kind="stable")[:4]
-        suggestions = [self.faqs[index]["Question"] for index in indices if scores[index] > 0]
         best = int(indices[0])
         answer = self.faqs[best]["Answer"] if scores[best] >= self.threshold else None
+        # Weak word overlap (e.g. "hospital") is not a useful follow-up. Keep
+        # suggestions in the matched topic and omit the question just answered.
+        suggestions = list(dict.fromkeys(
+            self.faqs[index]["Question"] for index in indices
+            if scores[index] >= max(self.threshold, scores[best] * 0.65)
+            and self.faqs[index]["Class"] == self.faqs[best]["Class"]
+            and normalize(self.faqs[index]["Question"]) != normalize(message)
+            and (not answer or index != best)
+        ))[:3]
         return {"response": answer, "suggestions": suggestions, "source": "faq" if answer else "fallback"}

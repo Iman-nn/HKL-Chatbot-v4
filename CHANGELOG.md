@@ -1,5 +1,22 @@
 # Changelog remaster HKL Chatbot
 
+## Jawapan sembang - 19 Oktober 2026
+
+- `static/chat.js` dan `public/static/chat.js`: renderer DOM untuk bold, perenggan,
+  senarai, kod dan pautan; HTML mentah kekal literal, protokol berbahaya disekat,
+  dan notis AI dipaparkan sebagai label berasingan daripada kandungan jawapan.
+- `static/style.css` dan `public/static/style.css`: jarak teks lebih padat,
+  pautan aksesibel, label AI dan footer sumber yang menyokong tema gelap/telefon.
+- `hkl_chatbot/contact.py`: jawapan hubungan umum BM/English berdasarkan laman
+  rasmi HKL, dengan pautan sumber dan tarikh semakan; tidak memanggil OpenRouter.
+- `hkl_chatbot/knowledge.py`: tapis cadangan yang lemah, silang topik, berulang
+  atau sudah dijawab; jangan cadangkan semula lokasi yang baru dipaparkan.
+- `hkl_chatbot/provider.py`: arahan jawapan lebih ringkas, mengikut bahasa pengguna,
+  dan larangan mereka nombor telefon, URL, waktu operasi atau rujukan.
+- Ujian: pemformatan/pautan selamat, XSS, label AI, sumber kurasi, pilihan jawapan
+  hubungan, relevansi cadangan dan kesamaan aset Vercel. Semakan Chromium terasing
+  menguji jawapan hubungan sebenar serta respons AI simulasi tanpa panggilan luar.
+
 ## Skop dan penemuan
 
 Sistem asal ialah aplikasi web Python/Flask monolitik dengan Jinja, JavaScript/jQuery, pandas, NLTK dan scikit-learn. Ia memadankan soalan FAQ daripada CSV, menyediakan navigasi hospital, menyimpan sejarah dalam dictionary proses dan menggunakan OpenRouter apabila padanan rendah. Skrip terminal juga melatih SVM semasa import. Antara muka HTML wujud dalam beberapa salinan.

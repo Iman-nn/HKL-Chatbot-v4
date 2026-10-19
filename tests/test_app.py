@@ -59,6 +59,28 @@ class AppTests(unittest.TestCase):
         history = self.client.get("/history/" + self.identifier, headers=self.headers).json["history"]
         self.assertEqual(history, [{"user": question, "bot": response.json["response"]}])
 
+    def test_general_contact_uses_curated_source_without_external_ai(self):
+        with patch.object(self.app.extensions["provider"], "answer") as provider:
+            for question in ("how to contact hospital?", "HKL contact number", "Nombor telefon HKL?", "Bagaimana hubungi hospital?"):
+                result = self.ask(question).json
+                self.assertEqual(result["source"], "official_contact")
+                self.assertIn("03-2615 5555", result["response"])
+                self.assertEqual(result["suggestions"], [])
+                self.assertEqual(result["references"][0]["url"], "https://hkl.moh.gov.my/en/")
+            provider.assert_not_called()
+        for question in ("contact physiotherapy", "phone number for cardiology", "how to contact hospital pharmacy"):
+            self.assertNotEqual(self.app.extensions["knowledge"].answer(question)["source"], "official_contact")
+
+    def test_suggestions_omit_weak_overlap_and_the_answered_question(self):
+        knowledge = self.app.extensions["knowledge"]
+        self.assertEqual(knowledge._faq_answer("how to contact hospital")["suggestions"], [])
+        question = "What are the library opening hours?"
+        suggestions = knowledge.answer(question)["suggestions"]
+        self.assertNotIn(question, suggestions)
+        library = {row["Question"] for row in knowledge.faqs if row["Class"] == "Library"}
+        self.assertTrue(set(suggestions).issubset(library))
+        self.assertEqual(knowledge.answer("Pharmacy")["suggestions"].count("Pharmacy"), 0)
+
     def test_cross_conversation_access_denied(self):
         other = self.client.post("/start_conversation", json={}).json
         wrong = {"Authorization": "Bearer " + other["conversation_token"]}

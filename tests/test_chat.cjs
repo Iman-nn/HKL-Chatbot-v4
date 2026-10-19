@@ -23,6 +23,8 @@ class Element {
     } };
   }
   set innerHTML(_) { throw new Error("Unsafe HTML rendering"); }
+  set textContent(value) { this._text = value; this.children = []; }
+  get textContent() { return this._text + this.children.map(child => child.textContent).join(""); }
   get firstElementChild() { return this.children[0]; }
   append(node) { node.parent = this; this.children.push(node); }
   remove() { this.parent.children.splice(this.parent.children.indexOf(this), 1); }
@@ -50,13 +52,65 @@ function harness(fetch) {
       return [question];
     },
     createElement: tag => new Element(tag),
+    createTextNode(text) { const node = new Element("#text"); node.textContent = text; return node; },
   };
-  const context = vm.createContext({ document, window: {}, fetch, AbortController, setTimeout, clearTimeout });
+  const context = vm.createContext({ document, window: {}, fetch, URL, AbortController, setTimeout, clearTimeout });
   vm.runInContext(fs.readFileSync("static/chat.js", "utf8"), context);
   return { context, elements, run: code => vm.runInContext(code, context) };
 }
 
 const success = data => ({ ok: true, status: 200, json: async () => data });
+
+function descendants(element, tag) {
+  return element.children.flatMap(child => [
+    ...(child.tagName === tag ? [child] : []), ...descendants(child, tag),
+  ]);
+}
+
+test("bot formatting creates semantic paragraphs, bold labels, lists and actionable links", () => {
+  const state = harness();
+  state.run('appendMessage("**Phone:** 03-2615 5555\\n**Website:** https://hkl.moh.gov.my/.\\n\\n- First step\\n- Second step\\n\\nEmail: pro.hkl@moh.gov.my");');
+  const bubble = state.elements.get("#chatbox").children[0];
+  assert.equal(descendants(bubble, "strong")[0].textContent, "Phone:");
+  assert.equal(descendants(bubble, "ul").length, 1);
+  assert.equal(descendants(bubble, "li").length, 2);
+  const links = descendants(bubble, "a");
+  assert.equal(links[0].attributes.href, "tel:0326155555");
+  assert.equal(links[1].attributes.href, "https://hkl.moh.gov.my/");
+  assert.equal(links[1].attributes.rel, "noopener noreferrer");
+  assert.equal(links[2].attributes.href, "mailto:pro.hkl@moh.gov.my");
+  assert.equal(bubble.textContent.includes("**"), false);
+  state.run('appendMessage("Call +60 3-2615 5555 ext. 7016");');
+  assert.equal(descendants(state.elements.get("#chatbox").children[1], "a")[0].attributes.href,
+    "tel:+60326155555;ext=7016");
+});
+
+test("untrusted Markdown and HTML cannot create executable links or elements", () => {
+  const state = harness();
+  state.run('appendMessage("<img src=x onerror=alert(1)> **Safe** [Bad](javascript:alert) [Data](data:text/html,test) [Hidden](https://user:password@example.com) [Good](https://hkl.moh.gov.my/)");');
+  const bubble = state.elements.get("#chatbox").children[0];
+  assert.equal(descendants(bubble, "img").length, 0);
+  assert.equal(descendants(bubble, "a").length, 1);
+  assert.equal(descendants(bubble, "a")[0].attributes.href, "https://hkl.moh.gov.my/");
+  assert.match(bubble.textContent, /<img src=x onerror=alert\(1\)>/);
+  for (const url of ["javascript:alert(1)", "data:text/html,test", "//evil.test", "https://user:pass@evil.test", "https://hkl.moh.gov.my/\n", "https:evil.test"]) {
+    assert.equal(state.run(`safeLink(${JSON.stringify(url)})`), null);
+  }
+});
+
+test("AI disclosure is separate and only curated hospital references become source footers", () => {
+  const state = harness();
+  state.run('appendMessage("**Answer:** A short reply.", "bot", {source:"external_ai", references:[{url:"https://hkl.moh.gov.my/"}]});');
+  const ai = state.elements.get("#chatbox").children[0];
+  assert.equal(ai.children[0].className, "answer-badge");
+  assert.match(ai.children[0].textContent, /AI-generated/);
+  assert.equal(ai.children.length, 2);
+  state.run('appendMessage("Phone: 03-2615 5555", "bot", {source:"official_contact", references:[{title:"HKL official website",url:"https://hkl.moh.gov.my/en/",checked_on:"2026-10-19"},{url:"https://evil.test"},{url:"javascript:alert(1)"}]});');
+  const contact = state.elements.get("#chatbox").children[1];
+  assert.equal(contact.children[1].className, "answer-source");
+  assert.match(contact.children[1].textContent, /Checked 2026-10-19/);
+  assert.equal(contact.children.length, 2);
+});
 
 test("user, provider, and suggestion payloads remain literal text", () => {
   const state = harness();
