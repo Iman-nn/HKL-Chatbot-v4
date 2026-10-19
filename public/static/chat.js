@@ -18,11 +18,13 @@ const explorerBack = document.querySelector("#explore-back");
 const locationForm = document.querySelector("#location-form");
 const locationQuery = document.querySelector("#location-query");
 const privacy = document.querySelector("#privacy-dialog");
+const jumpLatest = document.querySelector("#jump-latest");
 
 let conversation = null;
 let busy = false;
 let recognition = null;
 let explorerRequest = 0;
+let followConversation = true;
 
 class ApiError extends Error {
   constructor(message, code) {
@@ -54,11 +56,50 @@ async function api(path, { method = "GET", body, authenticated = false } = {}) {
 
 function updateCharacterCount() {
   characterCount.textContent = input.value.length.toLocaleString("en-US") + " / 2,000";
+  resizeComposer();
 }
 
-function scrollConversation() {
+function resizeComposer() {
+  // CSS caps the height, so long questions scroll inside the field instead of
+  // covering the conversation. Recompute after width and viewport changes.
+  input.style.height = "auto";
+  input.style.height = input.scrollHeight + "px";
+}
+
+function scrollConversation(force = false) {
+  if (!force && !followConversation) return;
+  jumpLatest.hidden = true;
   conversationArea.scrollTop = conversationArea.scrollHeight;
 }
+
+conversationArea.addEventListener("scroll", () => {
+  followConversation = conversationArea.scrollHeight - conversationArea.scrollTop - conversationArea.clientHeight < 96;
+  jumpLatest.hidden = followConversation || chatbox.hidden;
+});
+jumpLatest.addEventListener("click", () => {
+  followConversation = true;
+  scrollConversation(true);
+});
+
+function resizeViewport() {
+  const viewport = window.visualViewport;
+  // Do not resize the app while the user is pinch-zooming for readability.
+  if (viewport && viewport.scale === 1) {
+    document.documentElement.style.setProperty("--app-height", viewport.height + "px");
+    document.documentElement.style.setProperty("--viewport-top", viewport.offsetTop + "px");
+    const editing = document.activeElement === input || document.activeElement === locationQuery;
+    document.documentElement.classList.toggle("keyboard-open", editing && window.innerHeight - viewport.height > 120);
+  }
+  resizeComposer();
+  scrollConversation();
+}
+window.visualViewport?.addEventListener("resize", resizeViewport);
+window.visualViewport?.addEventListener("scroll", resizeViewport);
+window.addEventListener?.("resize", resizeViewport);
+input.addEventListener("focus", resizeViewport);
+input.addEventListener("blur", resizeViewport);
+locationQuery.addEventListener("focus", resizeViewport);
+locationQuery.addEventListener("blur", resizeViewport);
 
 function safeLink(value) {
   // Reject script/data URLs, credentials and control characters before creating
@@ -158,6 +199,7 @@ function renderAnswer(parent, text) {
 }
 
 function appendMessage(text, author = "bot", metadata = {}) {
+  if (author === "user") followConversation = true;
   welcome.hidden = true;
   chatbox.hidden = false;
   const message = document.createElement("div");
@@ -192,6 +234,7 @@ function appendMessage(text, author = "bot", metadata = {}) {
     }
   }
   chatbox.append(message);
+  if (!followConversation) jumpLatest.hidden = false;
   while (chatbox.children.length > 150) chatbox.firstElementChild.remove();
   scrollConversation();
 }
@@ -278,6 +321,8 @@ async function resetConversation() {
       }
     }
     conversation = null;
+    followConversation = true;
+    jumpLatest.hidden = true;
     chatbox.replaceChildren();
     chatbox.hidden = true;
     welcome.hidden = false;
@@ -495,3 +540,4 @@ if (SpeechRecognition) {
   voiceButton.title = "Voice input is unavailable in this browser";
 }
 updateCharacterCount();
+resizeViewport();

@@ -1,5 +1,26 @@
 # HKL Chatbot
 
+## Responsiveness UI - 19 Oktober 2026
+
+Ruang sembang dan composer berkongsi lebar maksimum 1120 px serta gutter yang
+menyesuaikan diri dengan skrin dan safe area. Teks jawapan menggunakan 16 px di
+desktop dan 15 px di telefon. Tablet sehingga 960 px menggunakan navigasi ikon
+dengan label aksesibel; telefon sehingga 600 px menggunakan navigasi mendatar.
+Landscape rendah menggunakan navigasi sisi yang padat untuk mengekalkan ruang
+bacaan. Butang hantar dan kawalan sentuhan utama berukuran sekurang-kurangnya 44 px.
+
+Textarea mengembang secara automatik sehingga had tinggi, kemudian menatal secara
+dalaman. Visual Viewport API menyesuaikan tinggi aplikasi untuk papan kekunci
+tanpa mengecilkan susun atur semasa pinch zoom. Dialog turut dipusatkan dalam
+viewport yang kelihatan. Kedudukan bacaan dikekalkan jika pengguna menatal ke
+mesej lama; butang Latest message membawa pengguna kembali ke mesej terkini.
+
+QA: `python tests/responsive_browser_check.py` menggunakan Chromium terasing
+dan preview tanpa AI pada port 5052. Ia menguji 15 saiz 320–2560 px, landscape,
+mesej/pautan panjang, input berbilang baris, dialog, cadangan dan viewport yang
+mengecil. Laluan visualViewport-only turut disimulasikan; ujian ini belum
+menggantikan semakan papan kekunci Safari/Android pada peranti fizikal.
+
 Chatbot maklumat Hospital Kuala Lumpur: carian FAQ, cadangan soalan dan panduan lokasi daripada CSV tempatan. Refactor ini mengekalkan Flask dan menggantikan latihan model klasifikasi yang tidak digunakan dengan carian TF-IDF. Jawapan daripada korpus perlu disahkan oleh pemilik kandungan HKL; kod tidak menjamin ketepatan maklumat hospital.
 
 ## Jalankan

@@ -22,7 +22,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#102c3c">
   <meta name="description" content="A little guidance for your Hospital Kuala Lumpur visit. Explore FAQs, hospital services and directions.">
   <title>HKL Guide | Your hospital companion</title>
@@ -42,9 +42,9 @@
       <div class="nav-section">
         <p class="section-label">A LITTLE GUIDANCE</p>
         <nav class="nav-items" aria-label="Explore HKL">
-          <button id="chat-nav" class="nav-item is-current" type="button" aria-current="page">{{ icon('chat') }}<span class="desktop-nav-label">Chat assistant</span><span class="mobile-nav-label">Chat</span><span class="nav-dot"></span></button>
-          <button id="browse-faqs" class="nav-item" type="button">{{ icon('grid') }}<span class="desktop-nav-label">Browse FAQs</span><span class="mobile-nav-label">FAQs</span>{{ icon('arrow', 'nav-arrow') }}</button>
-          <button id="browse-locations" class="nav-item" type="button">{{ icon('pin') }}<span class="desktop-nav-label">Hospital directions</span><span class="mobile-nav-label">Directions</span>{{ icon('arrow', 'nav-arrow') }}</button>
+          <button id="chat-nav" class="nav-item is-current" type="button" aria-current="page" aria-label="Chat assistant" title="Chat assistant">{{ icon('chat') }}<span class="desktop-nav-label">Chat assistant</span><span class="mobile-nav-label">Chat</span><span class="nav-dot"></span></button>
+          <button id="browse-faqs" class="nav-item" type="button" aria-label="Browse FAQs" title="Browse FAQs">{{ icon('grid') }}<span class="desktop-nav-label">Browse FAQs</span><span class="mobile-nav-label">FAQs</span>{{ icon('arrow', 'nav-arrow') }}</button>
+          <button id="browse-locations" class="nav-item" type="button" aria-label="Hospital directions" title="Hospital directions">{{ icon('pin') }}<span class="desktop-nav-label">Hospital directions</span><span class="mobile-nav-label">Directions</span>{{ icon('arrow', 'nav-arrow') }}</button>
         </nav>
       </div>
       <div class="sidebar-bottom">
@@ -53,7 +53,7 @@
           <p>A little less searching.<br>A little more peace of mind.</p>
           <span>Here to help you take the next step.</span>
         </div>
-        <button id="privacy-btn" class="privacy-button" type="button">{{ icon('shield') }}<span>Your privacy matters</span>{{ icon('arrow') }}</button>
+        <button id="privacy-btn" class="privacy-button" type="button" aria-label="Your privacy matters" title="Your privacy matters">{{ icon('shield') }}<span>Your privacy matters</span>{{ icon('arrow') }}</button>
         <p class="sidebar-footnote">General information for your hospital visit.</p>
       </div>
     </aside>
@@ -115,6 +115,7 @@
 
         <section id="chatbox" class="chatbox" role="log" aria-label="Your conversation with HKL Guide" aria-live="polite" aria-relevant="additions" aria-busy="false" hidden></section>
         <div id="typing" class="typing-indicator" aria-hidden="true" hidden><span class="typing-avatar">H</span><span class="typing-dots"><i></i><i></i><i></i></span><span>Finding your next step</span></div>
+        <button id="jump-latest" class="jump-latest" type="button" hidden>Latest message &darr;</button>
       </div>
 
       <section class="composer-section" aria-label="Ask HKL Guide">
@@ -129,8 +130,8 @@
             <button id="send-btn" class="send-button" type="submit" aria-label="Send your question">{{ icon('send') }}</button>
           </div>
         </form>
-        <div class="composer-meta"><span id="input-hint"><kbd>Enter</kbd> to send <span class="hint-divider">&middot;</span> <kbd>Shift + Enter</kbd> for a new line</span><span id="character-count" aria-label="Message length">0 / 2,000</span></div>
-        <p class="information-note">{{ icon('shield') }}<span>General information only. Please keep personal and medical details private.</span><button id="privacy-inline" type="button">Privacy</button></p>
+        <div class="composer-meta"><span id="input-hint"><span class="keyboard-hint"><kbd>Enter</kbd> to send <span class="hint-divider">&middot;</span> <kbd>Shift + Enter</kbd> for a new line</span><span class="touch-hint">Tap the arrow to send</span></span><span id="character-count" aria-label="Message length">0 / 2,000</span></div>
+        <p class="information-note">{{ icon('shield') }}<span><span class="privacy-long">General information only. Please keep personal and medical details private.</span><span class="privacy-short">Keep personal &amp; medical details private.</span></span><button id="privacy-inline" type="button">Privacy</button></p>
         {% if external_enabled %}<p class="external-notice">Unmatched questions may be sent to an external AI provider. Please verify AI-generated answers.</p>{% endif %}
       </section>
     </main>

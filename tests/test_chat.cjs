@@ -16,8 +16,13 @@ class Element {
     this.className = "";
     this.hidden = false;
     this.open = false;
+    this.scrollHeight = 44;
+    this.scrollTop = 0;
+    this.clientHeight = 44;
+    this.style = { setProperty(name, value) { this[name] = value; } };
     const classes = new Set();
-    this.classList = { toggle(name) {
+    this.classList = { contains: name => classes.has(name), toggle(name, force) {
+      if (force !== undefined) { if (force) classes.add(name); else classes.delete(name); return force; }
       if (classes.has(name)) { classes.delete(name); return false; }
       classes.add(name); return true;
     } };
@@ -37,10 +42,11 @@ class Element {
   focus() {}
 }
 
-function harness(fetch) {
+function harness(fetch, windowOptions = {}) {
   const elements = new Map();
   const document = {
     body: new Element("body"),
+    documentElement: new Element("html"),
     querySelector(selector) {
       if (!elements.has(selector)) elements.set(selector, new Element());
       return elements.get(selector);
@@ -54,12 +60,57 @@ function harness(fetch) {
     createElement: tag => new Element(tag),
     createTextNode(text) { const node = new Element("#text"); node.textContent = text; return node; },
   };
-  const context = vm.createContext({ document, window: {}, fetch, URL, AbortController, setTimeout, clearTimeout });
+  const context = vm.createContext({ document, window: { innerHeight: 900, ...windowOptions }, fetch, URL, AbortController, setTimeout, clearTimeout });
   vm.runInContext(fs.readFileSync("static/chat.js", "utf8"), context);
   return { context, elements, run: code => vm.runInContext(code, context) };
 }
 
 const success = data => ({ ok: true, status: 200, json: async () => data });
+
+test("a reply preserves the reading position when the user scrolls up, with a jump to latest", async () => {
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  const state = harness(async path => {
+    if (path === "/start_conversation") return success({ conversation_id: "id", conversation_token: "token" });
+    await pending;
+    return success({ response: "A new answer", suggestions: [] });
+  });
+  state.elements.get("#user-input").value = "Question";
+  const sending = state.run("sendMessage()");
+  await new Promise(resolve => setImmediate(resolve));
+  const area = state.elements.get("#conversation-area");
+  area.scrollHeight = 2000;
+  area.clientHeight = 400;
+  area.scrollTop = 100;
+  area.listeners.scroll();
+  release();
+  await sending;
+  assert.equal(area.scrollTop, 100);
+  const jump = state.elements.get("#jump-latest");
+  assert.equal(jump.hidden, false);
+  jump.listeners.click();
+  assert.equal(area.scrollTop, 2000);
+  assert.equal(jump.hidden, true);
+});
+
+test("visual viewport follows keyboard height while pinch zoom preserves the layout", () => {
+  const events = {};
+  const viewport = { scale: 1, height: 900, offsetTop: 0, addEventListener(name, handler) { events[name] = handler; } };
+  const state = harness(undefined, { visualViewport: viewport });
+  state.run('document.activeElement = input');
+  viewport.height = 400;
+  events.resize();
+  assert.equal(state.run('document.documentElement.style["--app-height"]'), "400px");
+  assert.equal(state.run('document.documentElement.classList.contains("keyboard-open")'), true);
+  viewport.scale = 2;
+  viewport.height = 200;
+  events.resize();
+  assert.equal(state.run('document.documentElement.style["--app-height"]'), "400px");
+  viewport.scale = 1;
+  viewport.height = 900;
+  events.resize();
+  assert.equal(state.run('document.documentElement.classList.contains("keyboard-open")'), false);
+});
 
 function descendants(element, tag) {
   return element.children.flatMap(child => [

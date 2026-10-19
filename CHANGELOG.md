@@ -1,5 +1,21 @@
 # Changelog remaster HKL Chatbot
 
+## Responsiveness UI - 19 Oktober 2026
+
+- `static/style.css` dan `public/static/style.css`: lebar sembang/composer
+  diselaraskan, teks jawapan dibesarkan, navigasi tablet dipadatkan, sokongan
+  landscape/safe area, kawalan sentuhan 44 px dan dialog mengikut visual viewport.
+- `templates/index.html`: viewport telefon, label aksesibel untuk navigasi ikon,
+  panduan input sentuhan, notis privasi ringkas dan butang Latest message.
+- `static/chat.js` dan `public/static/chat.js`: auto-height textarea, penyesuaian
+  Visual Viewport untuk papan kekunci dan pengekalan scroll semasa membaca sejarah.
+- `tests/test_chat.cjs`: ujian respons lewat ketika membaca mesej lama serta
+  perubahan viewport papan kekunci/pinch zoom; jumlah 18 ujian JavaScript lulus.
+- `tests/responsive_browser_check.py`: 15 saiz skrin, dua mod papan kekunci simulasi,
+  dialog, teks panjang, input dan cadangan; screenshot dalam `artifacts/responsive-*`.
+- 4 ujian UI Python lulus termasuk kesamaan aset Vercel. Backend tidak diubah
+  dalam penambahbaikan responsif ini. Telefon fizikal belum diuji.
+
 ## Jawapan sembang - 19 Oktober 2026
 
 - `static/chat.js` dan `public/static/chat.js`: renderer DOM untuk bold, perenggan,
