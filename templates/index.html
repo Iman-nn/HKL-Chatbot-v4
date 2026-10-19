@@ -1,393 +1,152 @@
+{% macro icon(name, cls='') -%}
+<svg class="icon {{ cls }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{% if name == 'chat' %}<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5a9.5 9.5 0 1 1 19 0Z"/><path d="M7 10h9M7 14h6"/>
+{% elif name == 'grid' %}<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>
+{% elif name == 'pin' %}<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>
+{% elif name == 'plus' %}<path d="M12 5v14M5 12h14"/>
+{% elif name == 'arrow' %}<path d="M5 12h14m-6-6 6 6-6 6"/>
+{% elif name == 'send' %}<path d="m5 12 7-7 7 7M12 5v15"/>
+{% elif name == 'moon' %}<path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"/>
+{% elif name == 'sun' %}<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>
+{% elif name == 'mic' %}<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2m-7 9v3m-4 0h8"/>
+{% elif name == 'shield' %}<path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6l8-4Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>
+{% elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{% elif name == 'close' %}<path d="m6 6 12 12M6 18 18 6"/>
+{% elif name == 'back' %}<path d="M19 12H5m6-6-6 6 6 6"/>
+{% elif name == 'search' %}<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>
+{% elif name == 'spark' %}<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>
+{% endif %}
+</svg>
+{%- endmacro %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hospital Kuala Lumpur Chatbot</title>
-  <link rel="shortcut icon" type="image/x-icon" href="static/hkl-favicon.ico" />
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <style>
-    body {
-      background-color: #f9fafb;
-      font-family: 'Helvetica Neue', sans-serif;
-    }
-
-    #chatbox {
-      max-height: calc(100vh - 150px);
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    /* Popup message */
-    .popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background-color: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 20px;
-      border-radius: 5px;
-      z-index: 1000;
-      display: none; /* Hidden by default */
-    }
-
-    /* Message styles */
-    .message {
-      margin-bottom: 10px;
-      border-radius: 20px;
-      padding: 12px 18px;
-      max-width: 90%;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-
-    .message.bot,
-    .message.user {
-      max-width: 90%;
-    }
-
-    /* Input styles */
-    #user-input {
-      border: 1px solid #cbd5e1;
-      border-radius: 9999px;
-      padding: 10px 20px;
-      flex-grow: 1;
-      margin-right: 10px;
-      transition: border-color 0.3s ease;
-    }
-
-    #user-input:focus {
-      border-color: #2563eb;
-      outline: none;
-    }
-
-    /* Button styles */
-    button {
-      border-radius: 9999px;
-      transition: background-color 0.3s, transform 0.2s;
-    }
-
-    button:hover {
-      transform: scale(1.03);
-    }
-
-    /* Footer adjustments */
-    footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    /* Loading spinner */
-    .loader {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #3498db;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      #chatbox {
-        padding: 10px;
-      }
-
-      .message {
-        padding: 10px 15px;
-      }
-
-      #user-input {
-        padding: 8px 15px;
-      }
-
-      button {
-        padding: 8px;
-      }
-
-      footer {
-        flex-direction: row;
-        align-items: center;
-      }
-
-      #user-input {
-        margin-right: 10px;
-        width: 100%;
-      }
-
-      #send-btn,
-      #voice-btn {
-        width: auto;
-        margin-left: 5px;
-      }
-    }
-
-    /* Dark mode - functionality implemented in JS */
-    body.dark-mode {
-      background-color: #1f2937;
-      color: #181818; /* Text Input Color */
-    }
-
-    body.dark-mode header,
-    body.dark-mode footer {
-      background-color: #374151;
-    }
-
-    body.dark-mode #chatbox {
-      background-color: #1f2937;
-    }
-
-    body.dark-mode .message.bot {
-      background-color: #374151;
-      color: #d1d5db;
-    }
-
-    body.dark-mode .message.user {
-      background-color: #3b82f6;
-      color: #ffffff;
-    }
-
-    .bg-yellow-200 {
-      background-color: #ca58ff;
-      padding: 2px 4px;
-      border-radius: 4px;
-    }
-  </style>
+  <meta name="theme-color" content="#102c3c">
+  <meta name="description" content="A little guidance for your Hospital Kuala Lumpur visit. Explore FAQs, hospital services and directions.">
+  <title>HKL Guide | Your hospital companion</title>
+  <link rel="icon" href="{{ url_for('static', filename='hkl-favicon.ico') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='chat.js') }}"></script>
 </head>
+<body>
+  <a class="skip-link" href="#user-input">Skip to your question</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Hospital guide navigation">
+      <a class="brand" href="/" aria-label="HKL Guide home">
+        <span class="brand-logo"><img src="{{ url_for('static', filename='Logo_Hospital_Kuala_Lumpur.png') }}" alt="" width="42" height="42"></span>
+        <span class="brand-name">Hospital<br> Kuala Lumpur<span class="brand-caption">PATIENT &amp; VISITOR GUIDE</span></span>
+      </a>
+      <button id="reset-btn" class="new-chat" type="button" aria-label="Start a new conversation">{{ icon('plus') }}<span>New conversation</span></button>
+      <div class="nav-section">
+        <p class="section-label">A LITTLE GUIDANCE</p>
+        <nav class="nav-items" aria-label="Explore HKL">
+          <button id="chat-nav" class="nav-item is-current" type="button" aria-current="page">{{ icon('chat') }}<span class="desktop-nav-label">Chat assistant</span><span class="mobile-nav-label">Chat</span><span class="nav-dot"></span></button>
+          <button id="browse-faqs" class="nav-item" type="button">{{ icon('grid') }}<span class="desktop-nav-label">Browse FAQs</span><span class="mobile-nav-label">FAQs</span>{{ icon('arrow', 'nav-arrow') }}</button>
+          <button id="browse-locations" class="nav-item" type="button">{{ icon('pin') }}<span class="desktop-nav-label">Hospital directions</span><span class="mobile-nav-label">Directions</span>{{ icon('arrow', 'nav-arrow') }}</button>
+        </nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="companion-note">
+          <span class="note-symbol">{{ icon('spark') }}</span>
+          <p>A little less searching.<br>A little more peace of mind.</p>
+          <span>Here to help you take the next step.</span>
+        </div>
+        <button id="privacy-btn" class="privacy-button" type="button">{{ icon('shield') }}<span>Your privacy matters</span>{{ icon('arrow') }}</button>
+        <p class="sidebar-footnote">General information for your hospital visit.</p>
+      </div>
+    </aside>
 
-<body class="bg-gray-50 h-screen flex flex-col">
-  <!-- Header -->
-  <header class="flex items-center justify-between p-4 bg-blue-700 text-white shadow-md">
-    <div class="flex items-center space-x-3">
-      <img src="static/Logo_Hospital_Kuala_Lumpur.png" alt="Hospital Logo" class="rounded-full" style="width: 50px; height: 50px;">
-      <h1 class="text-xl font-bold">Hospital Kuala Lumpur Chatbot</h1>
-    </div>
-    <button id="toggle-dark" class="bg-white text-blue-600 px-5 py-3 rounded-full text-sm">☾</button>
-  </header>
+    <main class="workspace">
+      <header class="topbar">
+        <div class="workspace-title"><span class="topbar-mark">{{ icon('spark') }}</span><span>HKL <strong>Guide</strong><span class="topbar-divider">/</span><span class="topbar-caption">Your hospital companion</span></span></div>
+        <div class="topbar-actions">
+          <button id="clear-chat" class="text-button" type="button" title="Clear this conversation">{{ icon('plus') }}<span>Start fresh</span></button>
+          <span class="action-divider"></span>
+          <button id="toggle-dark" class="icon-button theme-toggle" type="button" aria-label="Use dark theme" aria-pressed="false" title="Change theme">{{ icon('moon', 'moon-icon') }}{{ icon('sun', 'sun-icon') }}</button>
+        </div>
+      </header>
 
-  <!-- Chat Section -->
-  <main class="flex-1 overflow-y-auto p-4" id="chatbox">
-    <!-- Messages will appear here -->
-  </main>
+      <div class="conversation-area" id="conversation-area">
+        <section id="welcome" class="welcome" aria-labelledby="welcome-title">
+          <div class="hero">
+            <div class="hero-copy">
+              <span class="eyebrow"><span></span> WELCOME TO HKL GUIDE</span>
+              <h1 id="welcome-title">Your visit, made<br>a little <em>easier.</em></h1>
+              <p>Finding your way should feel simple.<br>Let us help with the questions along the way.</p>
+            </div>
+            <div class="hospital-art" aria-hidden="true">
+              <svg viewBox="0 0 310 260" fill="none" focusable="false">
+                <circle cx="159" cy="128" r="101" fill="currentColor" class="art-wash"/>
+                <path d="M24 220h264" stroke="currentColor" class="art-line" stroke-width="1.5"/>
+                <path d="M45 218c15-26 50-7 63-26s-7-33 17-40" stroke="currentColor" class="art-path" stroke-width="2" stroke-dasharray="4 6"/>
+                <path d="M104 219v-99l68-32 67 32v99" fill="currentColor" class="art-building"/>
+                <path d="M104 120v99h135v-99l-67-32-68 32Z" stroke="currentColor" class="art-outline" stroke-width="1.5"/>
+                <path d="M88 219v-62h36v62M221 219v-62h35v62" fill="currentColor" class="art-wing"/>
+                <path d="M88 219v-62h36m97 0h35v62" stroke="currentColor" class="art-outline" stroke-width="1.5"/>
+                <path d="M155 219v-37h34v37" fill="currentColor" class="art-door"/>
+                <path d="M172 183v36" stroke="currentColor" class="art-outline" stroke-width="1.5"/>
+                <path d="M138 141h13v14h-13zm54 0h13v14h-13zm-54 28h13v14h-13zm54 0h13v14h-13z" fill="currentColor" class="art-window"/>
+                <path d="M167 108h10v8h8v10h-8v8h-10v-8h-8v-10h8v-8Z" fill="currentColor" class="art-cross"/>
+                <path d="M61 219v-36m-5-2c-21-7-6-40 6-40s25 35 5 40" stroke="currentColor" class="art-tree" stroke-width="2"/>
+                <path d="M268 219v-24m-4-1c-14-6-4-28 4-28s18 24 4 28" stroke="currentColor" class="art-tree" stroke-width="2"/>
+                <rect x="51" y="56" width="79" height="37" rx="12" fill="currentColor" class="art-label"/>
+                <path d="m70 74 4 4 8-9m10 3h21m-21 6h14" stroke="currentColor" class="art-label-ink" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="251" cy="73" r="21" fill="currentColor" class="art-pin-bg"/>
+                <path d="M258 70c0 5-7 11-7 11s-7-6-7-11a7 7 0 1 1 14 0Z" stroke="currentColor" class="art-pin" stroke-width="1.7"/>
+                <circle cx="251" cy="70" r="2" stroke="currentColor" class="art-pin" stroke-width="1.7"/>
+                <path d="M216 39v10m-5-5h10M42 119v8m-4-4h8" stroke="currentColor" class="art-detail" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="art-caption">A little guidance. A better visit.</span>
+            </div>
+          </div>
 
-  <!-- Typing Animation -->
-  <div id="typing" class="text-center hidden">
-    <div class="loader"></div>
+          <div class="starter-section">
+            <div class="section-heading"><h2>Where would you like to start?</h2><span>Made for your next step</span></div>
+            <div class="starter-grid">
+              <button class="starter-card" id="quick-directions" type="button"><span class="starter-icon sage">{{ icon('pin') }}</span><span class="starter-copy"><strong>Find your way</strong><span>Directions to clinics &amp; facilities</span></span><span class="card-arrow">{{ icon('arrow') }}</span></button>
+              <button class="starter-card" id="quick-faqs" type="button"><span class="starter-icon peach">{{ icon('grid') }}</span><span class="starter-copy"><strong>Explore our services</strong><span>Answers to everyday questions</span></span><span class="card-arrow">{{ icon('arrow') }}</span></button>
+              <button class="starter-card" type="button" data-question="What are the library opening hours?"><span class="starter-icon lavender">{{ icon('clock') }}</span><span class="starter-copy"><strong>Library opening hours</strong><span>A useful place to begin</span></span><span class="card-arrow">{{ icon('arrow') }}</span></button>
+            </div>
+          </div>
+          <div class="welcome-tip">{{ icon('chat') }}<p>Have something else in mind? <strong>Just ask below.</strong></p></div>
+        </section>
+
+        <section id="chatbox" class="chatbox" role="log" aria-label="Your conversation with HKL Guide" aria-live="polite" aria-relevant="additions" aria-busy="false" hidden></section>
+        <div id="typing" class="typing-indicator" aria-hidden="true" hidden><span class="typing-avatar">H</span><span class="typing-dots"><i></i><i></i><i></i></span><span>Finding your next step</span></div>
+      </div>
+
+      <section class="composer-section" aria-label="Ask HKL Guide">
+        <div id="suggestions" class="suggestions" aria-label="Suggested questions"></div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+        <form id="chat-form" class="composer">
+          <span class="composer-symbol" aria-hidden="true">{{ icon('spark') }}</span>
+          <label for="user-input" class="visually-hidden">Your question for HKL Guide</label>
+          <textarea id="user-input" maxlength="2000" placeholder="Ask HKL Guide a question..." rows="1" required aria-describedby="input-hint"></textarea>
+          <div class="composer-actions">
+            <button id="voice-btn" class="icon-button voice-button" type="button" aria-label="Start voice input" aria-pressed="false" title="Use voice input">{{ icon('mic') }}</button>
+            <button id="send-btn" class="send-button" type="submit" aria-label="Send your question">{{ icon('send') }}</button>
+          </div>
+        </form>
+        <div class="composer-meta"><span id="input-hint"><kbd>Enter</kbd> to send <span class="hint-divider">&middot;</span> <kbd>Shift + Enter</kbd> for a new line</span><span id="character-count" aria-label="Message length">0 / 2,000</span></div>
+        <p class="information-note">{{ icon('shield') }}<span>General information only. Please keep personal and medical details private.</span><button id="privacy-inline" type="button">Privacy</button></p>
+        {% if external_enabled %}<p class="external-notice">Unmatched questions may be sent to an external AI provider. Please verify AI-generated answers.</p>{% endif %}
+      </section>
+    </main>
   </div>
 
-  <!-- Footer Input -->
-  <footer class="p-4 bg-gray-300 flex items-center space-x-2">
-    <button id="voice-btn" class="bg-blue-600 text-white px-4 py-2 rounded-full">
-      <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-        <line x1="12" y1="19" x2="12" y2="23" />
-        <line x1="8" y1="23" x2="16" y2="23" />
-      </svg>
-    </button>
-    <textarea id="user-input" placeholder="Ask here..." rows="1" class="flex-1 border rounded-full px-4 py-2 focus:outline-none resize-none overflow-hidden"></textarea>
-    <button id="send-btn" class="bg-blue-600 text-white px-6 py-2 rounded-full">Send</button>
-  </footer>
+  <dialog id="explore-dialog" class="explore-dialog" aria-labelledby="explore-title" aria-describedby="explore-subtitle">
+    <div class="dialog-header"><div><span class="eyebrow">A LITTLE GUIDANCE</span><h2 id="explore-title">Explore HKL</h2></div><button id="close-explore" class="icon-button" type="button" aria-label="Close explorer">{{ icon('close') }}</button></div>
+    <p id="explore-subtitle" class="dialog-description"></p>
+    <form id="location-form" class="location-search" hidden><label for="location-query" class="visually-hidden">Search hospital locations</label>{{ icon('search') }}<input id="location-query" type="search" maxlength="200" placeholder="Try Pharmacy or Radiology" autocomplete="off"><button class="search-button" type="submit">Search</button></form>
+    <button id="explore-back" class="back-button" type="button" hidden>{{ icon('back') }} All categories</button>
+    <div id="explore-content" class="explore-content" aria-live="polite" aria-busy="false"></div>
+  </dialog>
 
-  <!-- Popup Message -->
-  <div id="popup-message" class="popup">Please enter a message</div>
-
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script>
-    // Global variables
-    let currentConversationId = null;
-    let recognizing = false;
-    let recognition;
-
-    // Initialize speech recognition if supported
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = function (event) {
-        $('#user-input').val(event.results[0][0].transcript);
-      };
-
-      recognition.onerror = function (event) {
-        console.error("Speech recognition error:", event.error);
-      };
-    }
-
-    $(document).ready(function () {
-      // Initialize a new conversation when page loads
-      startNewConversation();
-
-      // Welcome message
-      setTimeout(function() {
-        appendBotMessage("Hello! I'm the Hospital Kuala Lumpur (HKL) chatbot. How can I help you today?");
-      }, 500);
-
-      // Event listeners
-      $('#send-btn').click(function () {
-        sendMessage();
-      });
-
-      $('#user-input')
-        .on('keypress', function (e) {
-          // Send message when Enter is pressed (without Shift)
-          if (e.which === 13 && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-          }
-        })
-        .on('input', function () {
-          // Auto-resize textarea
-          this.style.height = 'auto';
-          this.style.height = (this.scrollHeight) + 'px';
-        });
-
-      // Voice button handler
-      $('#voice-btn').click(function () {
-        if (!recognition) {
-          appendBotMessage("Sorry, speech recognition is not supported in your browser.");
-          return;
-        }
-        
-        if (!recognizing) {
-          recognition.start();
-          recognizing = true;
-          $(this).addClass('bg-red-600').removeClass('bg-blue-600');
-        } else {
-          recognition.stop();
-          recognizing = false;
-          $(this).addClass('bg-blue-600').removeClass('bg-red-600');
-        }
-      });
-
-      // Dark mode toggle
-      $('#toggle-dark').click(function () {
-        $('body').toggleClass('dark-mode');
-        
-        // Update toggle button appearance
-        if ($('body').hasClass('dark-mode')) {
-          $(this).html('☀').removeClass('text-blue-600 bg-white').addClass('text-yellow-300 bg-gray-500');
-        } else {
-          $(this).html('☾').removeClass('text-yellow-300 bg-gray-500').addClass('text-blue-600 bg-white');
-        }
-      });
-    });
-
-    // Function to start a new conversation
-    function startNewConversation() {
-      $.post('/start_conversation', function (data) {
-        currentConversationId = data.conversation_id;
-      });
-    }
-
-    // Function to send user message
-    function sendMessage() {
-      let userInput = $('#user-input').val().trim();
-      
-      // Check for empty message
-      if (!userInput) {
-        $('#popup-message').fadeIn(500, function() {
-          setTimeout(function() {
-            $('#popup-message').fadeOut(500);
-          }, 1500);
-        });
-        return;
-      }
-
-      // Add user message to chat
-      appendUserMessage(userInput);
-      
-      // Clear input and reset height
-      $('#user-input').val('');
-      $('#user-input').css('height', 'auto');
-      
-      // Show typing indicator
-      $('#typing').removeClass('hidden');
-
-      // Send request to server
-      $.ajax({
-        type: 'POST',
-        url: '/ask/' + currentConversationId,
-        data: JSON.stringify({ message: userInput }),
-        contentType: 'application/json',
-        success: function (response) {
-          // Hide typing indicator
-          $('#typing').addClass('hidden');
-          
-          // Handle different response types
-          if (Array.isArray(response.response)) {
-            appendBotMessage(response.response.join('<br>'));
-          } else {
-            appendBotMessage(response.response);
-          }
-          
-          // Show suggestions if available
-          if (response.suggestions) {
-            showSuggestions(response.suggestions);
-          }
-        },
-        error: function (xhr, status, error) {
-          $('#typing').addClass('hidden');
-          console.error("Error:", error);
-          appendBotMessage('Sorry, I encountered an error processing your message.');
-        }
-      });
-    }
-
-    // Function to add user message to chat
-    function appendUserMessage(msg) {
-      $('#chatbox').append(`<div class="flex justify-end mb-2">
-        <div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">${msg}</div>
-      </div>`);
-      scrollChatToBottom();
-    }
-
-    // Function to add bot message to chat
-    function appendBotMessage(msg) {
-      $('#chatbox').append(`<div class="flex justify-start mb-2">
-        <div class="bg-gray-300 text-gray-800 p-3 rounded-lg max-w-lg">${msg}</div>
-      </div>`);
-      scrollChatToBottom();
-    }
-
-    // Function to display suggestions
-    function showSuggestions(suggestions) {
-      suggestions.forEach(s => {
-        $('#chatbox').append(`
-          <div class="flex justify-start mb-2">
-            <button class="bg-gray-200 text-blue-600 px-3 py-1 rounded-full text-sm" onclick="suggestQuestion('${s.replace(/'/g, "\\'")}')">
-              ${s}
-            </button>
-          </div>
-        `);
-      });
-      scrollChatToBottom();
-    }
-
-    // Function to fill input with suggested question
-    function suggestQuestion(question) {
-      $('#user-input').val(question).focus();
-    }
-
-    // Function to scroll chat to bottom
-    function scrollChatToBottom() {
-      $('#chatbox').scrollTop($('#chatbox')[0].scrollHeight);
-    }
-  </script>
+  <dialog id="privacy-dialog" class="privacy-dialog" aria-labelledby="privacy-title">
+    <div class="dialog-header"><div><span class="eyebrow">FEEL AT EASE</span><h2 id="privacy-title">Your privacy matters.</h2></div><button id="close-privacy" class="icon-button" type="button" aria-label="Close privacy information">{{ icon('close') }}</button></div>
+    <div class="privacy-content"><p>HKL Guide helps with general hospital information. You do not need to share your name, identification number, contact details or medical information.</p><h3>A fresh start, whenever you need it</h3><p>Use <strong>Start fresh</strong> or <strong>New conversation</strong> to delete your current conversation. Conversations expire after one hour.</p><h3>A note about voice input</h3><p>Voice input may use your browser's speech service. You can always type your question instead.</p>{% if external_enabled %}<h3>External AI assistance</h3><p>Questions without a local match may be sent to an external AI provider. AI-generated answers can be inaccurate; please verify them with hospital staff.</p>{% endif %}<p class="privacy-footer">For medical concerns, please speak with a healthcare professional.</p></div>
+  </dialog>
 </body>
-
 </html>
